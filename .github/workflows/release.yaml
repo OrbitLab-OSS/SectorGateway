@@ -9,9 +9,12 @@ on:
 env:
   PANTS_CONFIG_FILES: pants.ci.toml
 
+permissions:
+  contents: write
+
 jobs:
-  build:
-    name: Build
+  release:
+    name: Release
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

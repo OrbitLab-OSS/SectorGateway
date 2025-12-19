@@ -5,17 +5,17 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
 
 env:
   PANTS_CONFIG_FILES: pants.ci.toml
-
-permissions:
-  contents: write
 
 jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:

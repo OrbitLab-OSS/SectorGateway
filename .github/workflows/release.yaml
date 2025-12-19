@@ -30,6 +30,7 @@ jobs:
             VERSION="$(git describe --tags --abbrev=0 | sed 's/^v//')"
           fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
@@ -48,62 +49,10 @@ jobs:
         run: pants test all
       - name: Build Gateway Appliance
         run: pants run scripts:build
-      - name: Create GitHub Release
-        id: create_release
-        uses: actions/github-script@v7
+      - uses: softprops/action-gh-release@v2
         with:
-          script: |
-            const tag = context.ref.replace("refs/tags/", "")
-            const version = tag.replace(/^v/, "")
-
-            const release = await github.rest.repos.createRelease({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                tag_name: tag,
-                name: `Sector Gateway ${version}`,
-                body: `Sector Gateway router appliance ${version}`,
-                draft: false,
-                prerelease: false
-            })
-
-            return release.data.upload_url
-      - name: Upload appliance
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require("fs")
-            const path = `scripts/sector-gateway-${process.env.VERSION}.tar.gz`
-
-            const uploadUrl = `${{ steps.create_release.outputs.result }}`
-              .replace("{?name,label}", "")
-
-            const data = fs.readFileSync(path)
-
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: context.payload.release?.id,
-              url: uploadUrl,
-              name: `sector-gateway-${process.env.VERSION}.tar.gz`,
-              data
-            })
-      - name: Upload checksum
-        uses: actions/github-script@v7
-        with:
-          script: |
-            const fs = require("fs")
-            const path = `scripts/sector-gateway-${process.env.VERSION}.tar.gz.sha256`
-
-            const uploadUrl = `${{ steps.create_release.outputs.result }}`
-              .replace("{?name,label}", "")
-
-            const data = fs.readFileSync(path)
-
-            await github.rest.repos.uploadReleaseAsset({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              release_id: context.payload.release?.id,
-              url: uploadUrl,
-              name: `sector-gateway-${process.env.VERSION}.tar.gz`,
-              data
-            })
+          tag_name: v${{ steps.version.outputs.version }}
+          name: Sector Gateway ${{ steps.version.outputs.version }}
+          files: |
+            scripts/sector-gateway-${{ steps.version.outputs.version }}.tar.gz
+            scripts/sector-gateway-${{ steps.version.outputs.version }}.tar.gz.sha256

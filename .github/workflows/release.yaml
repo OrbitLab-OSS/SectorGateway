@@ -23,7 +23,11 @@ jobs:
       - name: Set version
         id: version
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
+          if [[ "$GITHUB_REF_TYPE" == "tag" ]]; then
+            VERSION="${GITHUB_REF_NAME#v}"
+          else
+            VERSION="$(git describe --tags --abbrev=0 | sed 's/^v//')"
+          fi
           echo "VERSION=$VERSION" >> "$GITHUB_ENV"
       - name: Set up Python
         uses: actions/setup-python@v5
